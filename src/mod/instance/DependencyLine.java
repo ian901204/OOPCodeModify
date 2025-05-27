@@ -47,19 +47,12 @@ public class DependencyLine extends JPanel
 		Point fpPrime;
 		Point tpPrime;
 		
-		// Debug information
-		System.out.println("DependencyLine.paintComponent called");
-		
 		renewConnect();
 		fpPrime = new Point(fp.x - this.getLocation().x,
 				fp.y - this.getLocation().y);
 		tpPrime = new Point(tp.x - this.getLocation().x,
 				tp.y - this.getLocation().y);
-		
-		// Debug information
-		System.out.println("Drawing from: " + fpPrime + " to: " + tpPrime);
-		
-		// Set dashed line stroke
+
 		Graphics2D g2d = (Graphics2D) g;
 		Stroke defaultStroke = g2d.getStroke();
 		float[] dash = { 5.0f, 5.0f };
@@ -69,7 +62,6 @@ public class DependencyLine extends JPanel
 		g.setColor(Color.BLACK);
 		g2d.drawLine(fpPrime.x, fpPrime.y, tpPrime.x, tpPrime.y);
 		
-		// Restore default stroke
 		g2d.setStroke(defaultStroke);
 		
 		paintArrow(g, tpPrime);
@@ -128,8 +120,6 @@ public class DependencyLine extends JPanel
 	@Override
 	public void setConnect(DragPack dPack)
 	{
-		// Debug information
-		System.out.println("DependencyLine.setConnect called");
 		
 		Point mfp = dPack.getFrom();
 		Point mtp = dPack.getTo();
@@ -139,8 +129,6 @@ public class DependencyLine extends JPanel
 				mfp);
 		toSide = new AreaDefine().getArea(to.getLocation(), to.getSize(), mtp);
 		renewConnect();
-		System.out.println("Dependency Line: from side " + fromSide);
-		System.out.println("Dependency Line: to side " + toSide);
 	}
 
 	void renewConnect()
@@ -222,6 +210,7 @@ public class DependencyLine extends JPanel
 
 	public void setSelect(boolean isSelect)
 	{
+		System.out.println("setSelect: " + isSelect);
 		this.isSelect = isSelect;
 	}
 }
