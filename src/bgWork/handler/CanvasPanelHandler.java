@@ -107,17 +107,27 @@ public class CanvasPanelHandler extends PanelHandler
 		contextPanel.updateUI();
 	}
 
-	void selectByClick(MouseEvent e)
-	{
+	void selectByClick(MouseEvent e) {
 		boolean isSelect = false;
-		selectComp = new Vector <>();
-		for (int i = 0; i < members.size(); i ++)
-		{
-			if (isInside(members.elementAt(i), e.getPoint()) == true
-					&& isSelect == false)
-			{
-				switch (core.isFuncComponent(members.elementAt(i)))
-				{
+		selectComp = new Vector<>();
+		
+		for (int i = 0; i < members.size(); i++) {
+			int componentType = core.isFuncComponent(members.elementAt(i));
+			
+			// 對於線條類型，只檢查端口點擊
+			if (componentType >= 2 && componentType <= 4 || componentType == 6) {
+				// 線條類型：只有點擊端口才能選擇
+				if (isClickOnLinePort(members.elementAt(i), e.getPoint())) {
+					setLineSelect(members.elementAt(i), true);
+					selectComp.add(members.elementAt(i));
+					isSelect = true;
+				} else {
+					setSelectAllType(members.elementAt(i), false);
+				}
+			} 
+			// 對於其他類型，使用原來的邏輯
+			else if (isInside(members.elementAt(i), e.getPoint()) && !isSelect) {
+				switch (componentType) {
 					case 0:
 						((BasicClass) members.elementAt(i)).setSelect(true);
 						selectComp.add(members.elementAt(i));
@@ -132,30 +142,39 @@ public class CanvasPanelHandler extends PanelHandler
 						Point p = e.getPoint();
 						p.x -= members.elementAt(i).getLocation().x;
 						p.y -= members.elementAt(i).getLocation().y;
-						if (groupIsSelect((GroupContainer) members.elementAt(i),
-								p))
-						{
-							((GroupContainer) members.elementAt(i))
-									.setSelect(true);
+						if (groupIsSelect((GroupContainer) members.elementAt(i), p)) {
+							((GroupContainer) members.elementAt(i)).setSelect(true);
 							selectComp.add(members.elementAt(i));
 							isSelect = true;
-						}
-						else
-						{
-							((GroupContainer) members.elementAt(i))
-									.setSelect(false);
+						} else {
+							((GroupContainer) members.elementAt(i)).setSelect(false);
 						}
 						break;
 					default:
 						break;
 				}
-			}
-			else
-			{
+			} else {
 				setSelectAllType(members.elementAt(i), false);
 			}
 		}
 		repaintComp();
+	}
+
+	boolean isClickOnLinePort(JPanel lineComponent, Point clickPoint) {
+		int portRadius = 12; // 增加端口點擊區域半徑
+		
+		switch (core.isFuncComponent(lineComponent)) {
+			case 2: // AssociationLine
+				return checkAssociationLinePort((AssociationLine) lineComponent, clickPoint, portRadius);
+			case 3: // CompositionLine
+				return checkCompositionLinePort((CompositionLine) lineComponent, clickPoint, portRadius);
+			case 4: // GeneralizationLine
+				return checkGeneralizationLinePort((GeneralizationLine) lineComponent, clickPoint, portRadius);
+			case 6: // DependencyLine
+				return checkDependencyLinePort((DependencyLine) lineComponent, clickPoint, portRadius);
+			default:
+				return false;
+		}
 	}
 
 	boolean groupIsSelect(GroupContainer container, Point point)
@@ -359,33 +378,26 @@ public class CanvasPanelHandler extends PanelHandler
 		return false;
 	}
 
-	void addLine(JPanel funcObj, DragPack dPack)
-	{
-		for (int i = 0; i < members.size(); i ++)
-		{
-			if (isInside(members.elementAt(i), dPack.getFrom()) == true)
-			{
+	void addLine(JPanel funcObj, DragPack dPack) {
+		for (int i = 0; i < members.size(); i++) {
+			if (isInside(members.elementAt(i), dPack.getFrom())) {
 				dPack.setFromObj(members.elementAt(i));
 			}
-			if (isInside(members.elementAt(i), dPack.getTo()) == true)
-			{
+			if (isInside(members.elementAt(i), dPack.getTo())) {
 				dPack.setToObj(members.elementAt(i));
 			}
 		}
 		if (dPack.getFromObj() == dPack.getToObj()
 				|| dPack.getFromObj() == contextPanel
-				|| dPack.getToObj() == contextPanel)
-		{
+				|| dPack.getToObj() == contextPanel) {
 			return;
 		}
-		switch (members.size())
-		{
+		switch (members.size()) {
 			case 0:
 			case 1:
 				break;
 			default:
-				switch (core.isLine(funcObj))
-				{
+				switch (core.isLine(funcObj)) {
 					case 0:
 						((AssociationLine) funcObj).setConnect(dPack);
 						break;
@@ -402,6 +414,7 @@ public class CanvasPanelHandler extends PanelHandler
 						break;
 				}
 				contextPanel.add(funcObj, 0);
+				members.insertElementAt(funcObj, 0); // 確保添加到 members 列表
 				break;
 		}
 	}
@@ -543,5 +556,117 @@ public class CanvasPanelHandler extends PanelHandler
 			location.y += panel.getLocation().y;
 		}
 		return location;
+	}
+	/**
+	 * 檢查AssociationLine的端口
+	 */
+	boolean checkAssociationLinePort(AssociationLine line, Point clickPoint, int radius) {
+		// 獲取線條的起點和終點
+		Point fromPoint = getLineFromPoint(line);
+		Point toPoint = getLineToPoint(line);
+		
+		// 檢查是否點擊在起點或終點的範圍內
+		return isPointInCircle(clickPoint, fromPoint, radius) || 
+			isPointInCircle(clickPoint, toPoint, radius);
+	}
+
+	/**
+	 * 檢查CompositionLine的端口
+	 */
+	boolean checkCompositionLinePort(CompositionLine line, Point clickPoint, int radius) {
+		Point fromPoint = getLineFromPoint(line);
+		Point toPoint = getLineToPoint(line);
+		
+		return isPointInCircle(clickPoint, fromPoint, radius) || 
+			isPointInCircle(clickPoint, toPoint, radius);
+	}
+
+	/**
+	 * 檢查GeneralizationLine的端口
+	 */
+	boolean checkGeneralizationLinePort(GeneralizationLine line, Point clickPoint, int radius) {
+		Point fromPoint = getLineFromPoint(line);
+		Point toPoint = getLineToPoint(line);
+		
+		return isPointInCircle(clickPoint, fromPoint, radius) || 
+			isPointInCircle(clickPoint, toPoint, radius);
+	}
+
+	/**
+	 * 檢查DependencyLine的端口
+	 */
+	boolean checkDependencyLinePort(DependencyLine line, Point clickPoint, int radius) {
+		Point fromPoint = getLineFromPoint(line);
+		Point toPoint = getLineToPoint(line);
+		
+		return isPointInCircle(clickPoint, fromPoint, radius) || 
+			isPointInCircle(clickPoint, toPoint, radius);
+	}
+
+	/**
+	 * 檢查點是否在圓形區域內
+	 */
+	boolean isPointInCircle(Point clickPoint, Point centerPoint, int radius) {
+		double distance = Math.sqrt(Math.pow(clickPoint.x - centerPoint.x, 2) + 
+								Math.pow(clickPoint.y - centerPoint.y, 2));
+		return distance <= radius;
+	}
+	
+	/**
+	 * 獲取線條的起點座標
+	 */
+	Point getLineFromPoint(JPanel lineComponent) {
+		// 這需要根據您的線條類別實現來調整
+		// 假設線條類別有getFromPoint()方法
+		switch (core.isFuncComponent(lineComponent)) {
+			case 2: // AssociationLine
+				return ((AssociationLine) lineComponent).getFromPoint();
+			case 3: // CompositionLine
+				return ((CompositionLine) lineComponent).getFromPoint();
+			case 4: // GeneralizationLine
+				return ((GeneralizationLine) lineComponent).getFromPoint();
+			case 6: // DependencyLine
+				return ((DependencyLine) lineComponent).getFromPoint();
+			default:
+				return new Point(0, 0);
+		}
+	}
+
+	/**
+	 * 獲取線條的終點座標
+	 */
+	Point getLineToPoint(JPanel lineComponent) {
+		switch (core.isFuncComponent(lineComponent)) {
+			case 2: // AssociationLine
+				return ((AssociationLine) lineComponent).getToPoint();
+			case 3: // CompositionLine
+				return ((CompositionLine) lineComponent).getToPoint();
+			case 4: // GeneralizationLine
+				return ((GeneralizationLine) lineComponent).getToPoint();
+			case 6: // DependencyLine
+				return ((DependencyLine) lineComponent).getToPoint();
+			default:
+				return new Point(0, 0);
+		}
+	}
+
+	/**
+	 * 設置線條選中狀態
+	 */
+	void setLineSelect(JPanel lineComponent, boolean isSelect) {
+		switch (core.isFuncComponent(lineComponent)) {
+			case 2:
+				((AssociationLine) lineComponent).setSelect(isSelect);
+				break;
+			case 3:
+				((CompositionLine) lineComponent).setSelect(isSelect);
+				break;
+			case 4:
+				((GeneralizationLine) lineComponent).setSelect(isSelect);
+				break;
+			case 6:
+				((DependencyLine) lineComponent).setSelect(isSelect);
+				break;
+		}
 	}
 }

@@ -45,6 +45,12 @@ public class AssociationLine extends JPanel
 				fp.y - this.getLocation().y);
 		tpPrime = new Point(tp.x - this.getLocation().x,
 				tp.y - this.getLocation().y);
+		
+		if (isSelect) {
+			g.setColor(Color.RED);
+		} else {
+			g.setColor(Color.BLACK);
+		}
 		g.drawLine(fpPrime.x, fpPrime.y, tpPrime.x, tpPrime.y);
 		paintArrow(g, tpPrime);
 		if (isSelect == true)
@@ -131,11 +137,14 @@ public class AssociationLine extends JPanel
 	}
 
 	@Override
-	public void paintSelect(Graphics gra)
-	{
-		gra.setColor(Color.BLACK);
-		gra.fillRect(fp.x, fp.y, selectBoxSize, selectBoxSize);
-		gra.fillRect(tp.x, tp.y, selectBoxSize, selectBoxSize);
+	public void paintSelect(Graphics gra) {
+		// 將絕對座標轉換為相對於組件的座標
+		Point fpPrime = new Point(fp.x - this.getLocation().x, fp.y - this.getLocation().y);
+		Point tpPrime = new Point(tp.x - this.getLocation().x, tp.y - this.getLocation().y);
+		
+		gra.setColor(Color.RED); // 使用紅色讓選中效果更明顯
+		gra.fillRect(fpPrime.x - selectBoxSize/2, fpPrime.y - selectBoxSize/2, selectBoxSize, selectBoxSize);
+		gra.fillRect(tpPrime.x - selectBoxSize/2, tpPrime.y - selectBoxSize/2, selectBoxSize, selectBoxSize);
 	}
 
 	public boolean isSelect()
@@ -146,5 +155,14 @@ public class AssociationLine extends JPanel
 	public void setSelect(boolean isSelect)
 	{
 		this.isSelect = isSelect;
+	}
+	public Point getFromPoint() {
+    // 返回連接的起始組件的連接點
+    return new Point(fp.x, fp.y);
+	}
+
+	public Point getToPoint() {
+		// 返回連接的目標組件的連接點
+		return new Point(tp.x, tp.y);
 	}
 }
